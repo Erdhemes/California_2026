@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#F7F6F2">
+<meta name="description" content="California 2026 aile seyahati için gün bazlı mobil plan ve rota rehberi.">
+<meta name="color-scheme" content="light">
+<title>California 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="" defer></script>
+<style>
+/* ============================================================
+   GÖRÜNÜM KODU. Plan değişikliğinde buraya DOKUNMAYIN.
+   Kanonik veri en altta plan-data script blogunda.
+   ============================================================ */
+:root{
+  --paper:#F4F1EA;--paper-2:#ECE7DD;--card:#FFFEFB;--ink:#171813;--muted:#65665F;
+  --line:#DDD8CC;--line-strong:#C9C2B4;--sf:#087A83;--sf-deep:#07535A;--la:#D43C5C;
+  --la-deep:#8D2037;--ok:#147A4D;--warn:#A95609;--tbd:#B32727;--accent:var(--sf);
+  --accent-deep:var(--sf-deep);--accent-soft:#D9EEED;--pad:16px;--shadow:0 16px 44px rgba(42,37,27,.08);
+}
+body[data-city="la"]{--accent:var(--la);--accent-deep:var(--la-deep);--accent-soft:#F8DDE3;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html{scroll-behavior:smooth;}
+html,body{margin:0;padding:0;}
+body{background:var(--paper);color:var(--ink);font-family:'Instrument Sans',system-ui,sans-serif;
+  font-size:16px;line-height:1.5;padding-bottom:env(safe-area-inset-bottom);
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+body:before{content:"";position:fixed;inset:0 0 auto;height:360px;z-index:-1;pointer-events:none;
+  background:radial-gradient(circle at 15% -20%,var(--accent-soft),transparent 56%),
+  linear-gradient(180deg,rgba(255,255,255,.58),transparent);}
+button,a{touch-action:manipulation;}
+button{color:inherit;}
+h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;margin:0;line-height:1.04;letter-spacing:-.025em;}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+.skip{position:fixed;left:12px;top:10px;z-index:2000;background:var(--ink);color:#fff;padding:10px 14px;
+  border-radius:8px;transform:translateY(-150%);transition:transform .18s;text-decoration:none;}
+.skip:focus{transform:translateY(0);}
+
+.appbar{position:relative;z-index:900;background:rgba(244,241,234,.9);border-bottom:1px solid rgba(201,194,180,.7);
+  padding:calc(env(safe-area-inset-top) + 9px) var(--pad) 10px;backdrop-filter:blur(18px);}
+.appbar-inner{width:min(1180px,100%);margin:0 auto;display:flex;flex-direction:column;gap:10px;}
+.hrow{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;}
+.brand{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:800;white-space:nowrap;}
+.brandmark{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 5px var(--accent-soft);}
+.brand em{font-style:normal;color:var(--accent);}
+.tripmeta{display:none;color:var(--muted);font-size:13px;}
+.clock{font-size:12px;font-weight:800;color:var(--ink);background:var(--card);border:1px solid var(--line);
+  border-radius:999px;padding:7px 10px;white-space:nowrap;}
+.cityswitch{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:rgba(255,255,255,.55);
+  border:1px solid var(--line);border-radius:14px;}
+.cityswitch button{min-width:0;min-height:44px;border:0;background:transparent;color:var(--muted);font-family:inherit;
+  font-size:13px;font-weight:700;padding:8px 10px;border-radius:10px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cityswitch button[aria-pressed="true"]{background:var(--card);color:var(--accent-deep);box-shadow:0 3px 13px rgba(42,37,27,.09);}
+.tabs{position:static;z-index:950;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:5px;background:rgba(23,24,19,.94);
+  border:1px solid rgba(255,255,255,.13);border-radius:15px;box-shadow:0 8px 24px rgba(0,0,0,.13);backdrop-filter:blur(18px);}
+.tabs button{min-height:48px;background:none;border:0;border-radius:12px;font-family:'Bricolage Grotesque',sans-serif;
+  font-size:13px;font-weight:700;color:#C9C9C3;padding:7px 4px;cursor:pointer;display:grid;place-items:center;gap:1px;}
+.navicon{font-family:'Instrument Sans',sans-serif;font-size:17px;line-height:1;font-weight:500;}
+.tabs button[aria-selected="true"]{background:var(--accent);color:#fff;}
+main{width:min(1180px,100%);min-height:70vh;padding:18px var(--pad) 8px;margin:0 auto;}
+
+.daynav{display:flex;gap:8px;overflow-x:auto;padding:1px 1px 14px;margin:0 calc(var(--pad) * -1);
+  padding-inline:var(--pad);scroll-padding-inline:var(--pad);-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.daynav::-webkit-scrollbar{display:none;}
+.daynav button{flex:0 0 auto;min-height:44px;background:rgba(255,255,255,.66);border:1px solid var(--line);border-radius:999px;
+  padding:8px 13px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;color:var(--muted);
+  cursor:pointer;white-space:nowrap;}
+.daynav button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff;}
+.daynav button.today{border-color:var(--accent);color:var(--accent-deep);}
+.daynav button.today[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+.dayhero{position:relative;isolation:isolate;overflow:hidden;background:var(--ink);color:#fff;border-radius:23px;
+  padding:22px 20px;margin-bottom:14px;box-shadow:var(--shadow);}
+.dayhero:after{content:"";position:absolute;width:230px;height:230px;border:52px solid var(--accent);border-radius:50%;
+  right:-125px;top:-130px;opacity:.8;z-index:-1;}
+.eyebrow{font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:#C8CCC3;margin-bottom:9px;}
+.eyebrow strong{color:#fff;}.dayhero h1{font-size:clamp(29px,8vw,52px);max-width:760px;}
+.herofoot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;color:#C8CCC3;font-size:13px;}
+.herocity{display:flex;align-items:center;gap:7px;font-weight:600;min-width:0;overflow-wrap:anywhere;}.herocity:before{content:"";width:8px;height:8px;flex:0 0 auto;border-radius:50%;background:var(--accent);}
+.daycount{white-space:nowrap;}
+.daystats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:0 0 18px;}
+.stat{background:rgba(255,255,255,.62);border:1px solid var(--line);border-radius:14px;padding:12px;min-width:0;}
+.stat .k{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);}
+.stat .v{font-size:14px;font-weight:700;margin-top:3px;overflow-wrap:anywhere;}
+
+.now{background:var(--accent-deep);color:#fff;border-radius:18px;padding:18px;margin-bottom:16px;position:relative;overflow:hidden;
+  box-shadow:0 14px 30px color-mix(in srgb,var(--accent) 25%,transparent);}
+.now:before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:var(--accent);}
+.now .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:#D8F5F1;display:flex;align-items:center;gap:7px;}
+.pulse{width:7px;height:7px;border-radius:50%;background:#fff;animation:p 2s infinite;}
+@keyframes p{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.38;transform:scale(1.45)}}
+.now h2{font-size:25px;font-weight:800;margin:8px 0 7px;color:#fff;overflow-wrap:anywhere;}
+.now .meta{font-size:13.5px;color:#D0D8D6;}.now .meta b{color:#fff;font-weight:700;}
+.now .acts{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.now a.btn{background:#fff;color:var(--accent-deep);}
+.now a.btn.ghost{background:rgba(255,255,255,.13);color:#fff;border-color:rgba(255,255,255,.2);}
+
+a.btn,button.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;text-decoration:none;font-family:inherit;
+  font-size:13.5px;font-weight:700;padding:10px 14px;border-radius:11px;border:1px solid transparent;cursor:pointer;min-height:44px;}
+a.btn.line{background:var(--card);color:var(--ink);border-color:var(--line);}
+a.btn.full{width:100%;background:var(--accent);color:#fff;margin-bottom:12px;}
+.workspace{display:grid;gap:18px;align-items:start;}
+.timeline-wrap{min-width:0;}.aside{display:grid;gap:12px;}
+.panel{background:rgba(255,255,255,.65);border:1px solid var(--line);border-radius:18px;padding:16px;}
+.panel-title{font-size:17px;margin-bottom:11px;}.panel-copy{font-size:13.5px;color:var(--muted);margin:0;}
+.rhythm{display:grid;gap:10px;}.rhythm-row{display:grid;grid-template-columns:50px 1fr;gap:10px;align-items:start;}
+.rhythm-time{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;color:var(--accent-deep);padding-top:2px;}
+.rhythm-row b{font-size:13.5px;display:block;}.rhythm-row span{font-size:12px;color:var(--muted);}
+.attention{border-left:4px solid var(--warn);}.attention ul{padding-left:18px;margin:8px 0 0;font-size:13px;color:var(--muted);}
+
+.rail{position:relative;padding-left:58px;}
+.rail:before{content:"";position:absolute;left:22px;top:8px;bottom:22px;width:2px;background:var(--line-strong);}
+.stop{position:relative;margin-bottom:15px;content-visibility:auto;contain-intrinsic-size:150px;}
+.stop .t{position:absolute;left:-58px;top:16px;width:38px;text-align:right;font-family:'JetBrains Mono',monospace;
+  font-size:12px;font-weight:800;color:var(--muted);}
+.stop .dot{position:absolute;left:-43px;top:17px;width:17px;height:17px;border-radius:50%;background:var(--paper);
+  border:2.5px solid var(--line-strong);z-index:2;display:grid;place-items:center;font-family:'JetBrains Mono',monospace;
+  font-size:8.5px;font-weight:800;color:var(--muted);}
+.stop.meal .dot{border-color:var(--accent);background:var(--accent);color:#fff;}
+.stop.sub .dot{width:9px;height:9px;left:-39px;top:21px;font-size:0;background:var(--paper);}
+.stop.past{opacity:.48;filter:saturate(.65);}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;box-shadow:0 6px 22px rgba(42,37,27,.035);}
+.stop.meal .card{border-color:color-mix(in srgb,var(--accent) 65%,var(--line));box-shadow:inset 4px 0 0 var(--accent),0 8px 26px rgba(42,37,27,.05);}
+.stop.sub .card{background:rgba(255,255,255,.3);border-style:dashed;box-shadow:none;}
+.cardtop{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}.cardtop h3{font-size:17px;font-weight:700;overflow-wrap:anywhere;}
+.kind{flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--accent-deep);background:var(--accent-soft);border-radius:999px;padding:4px 7px;}
+.card .note{font-size:13.5px;color:var(--muted);margin-top:7px;overflow-wrap:anywhere;}
+.note-more{margin-top:9px;border-top:1px dashed var(--line);padding-top:8px;}
+.note-more summary{width:max-content;max-width:100%;cursor:pointer;color:var(--accent-deep);font-size:12px;font-weight:800;list-style:none;}
+.note-more summary::-webkit-details-marker{display:none;}.note-more summary:after{content:' +';}
+.note-more[open] summary:after{content:' −';}.note-more .note{margin-top:8px;}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+.badge{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.055em;text-transform:uppercase;
+  padding:5px 7px;border-radius:7px;border:1px solid;line-height:1.2;}
+.b-ok{color:var(--ok);border-color:#82B99F;background:#EEF8F3;}.b-warn{color:var(--warn);border-color:#E7B47A;background:#FFF7E9;}
+.b-tbd{color:var(--tbd);border-color:#E7A1A1;background:#FEF1F1;}.b-info{color:var(--muted);border-color:var(--line);background:#F7F5F0;}
+.cardacts{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap;}
+.leg{display:inline-flex;align-items:center;gap:7px;margin:-4px 0 10px;padding:5px 9px;border-radius:999px;
+  background:var(--paper-2);font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:700;color:var(--muted);}
+.leg:before{content:'↓';color:var(--accent);font-size:13px;}.nowline{position:relative;height:0;margin:-8px 0 10px;}
+.nowline:before{content:"";position:absolute;left:-47px;right:0;top:0;height:2px;background:var(--accent);}
+.nowline span{position:absolute;left:-47px;top:-10px;background:var(--accent);color:#fff;font-family:'JetBrains Mono',monospace;
+  font-size:9px;font-weight:800;letter-spacing:.1em;padding:3px 6px;border-radius:4px;}
+
+.route-layout{display:grid;gap:14px;align-items:start;}.schema{background:var(--card);border:1px solid var(--line);border-radius:18px;
+  padding:8px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow);}.schema svg{width:100%;height:auto;display:block;}
+.mapstage{position:relative;margin-bottom:12px;}.realmap{height:clamp(360px,56vh,620px);background:var(--paper-2);
+  border:1px solid var(--line);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);}
+.mapfallback[hidden]{display:none;}.mapfallback .schema{margin-bottom:0;}
+.map-pin{width:30px;height:30px;border-radius:50% 50% 50% 8px;transform:rotate(-45deg);background:var(--accent);
+  color:#fff;border:3px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.28);display:grid;place-items:center;}
+.map-pin span{transform:rotate(45deg);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;}
+.leaflet-div-icon{background:transparent;border:0;}.leaflet-container{font-family:'Instrument Sans',system-ui,sans-serif;}
+.leaflet-control-attribution{font-size:10px!important;}.map-popup b{display:block;font-size:14px;margin-bottom:3px;}
+.map-popup span{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+.map-popup a{display:inline-block;margin-top:8px;color:var(--accent-deep);font-weight:800;text-decoration:none;}
+.disc{font-size:12.5px;color:var(--muted);background:#FFF8E9;border:1px solid #ECD49E;border-radius:12px;padding:11px 13px;
+  margin-bottom:12px;line-height:1.45;}.slist{display:flex;flex-direction:column;gap:8px;}
+.srow{display:grid;grid-template-columns:30px 1fr auto;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);
+  border-radius:13px;padding:10px 12px;text-decoration:none;color:var(--ink);min-height:52px;}
+.snum{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;}.srow .sn{font-size:14px;font-weight:650;overflow-wrap:anywhere;}
+.srow .st{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--muted);}
+.route-leg{margin-left:14px;padding:3px 0 3px 26px;border-left:1px dashed var(--line-strong);font-size:11px;color:var(--muted);}
+.routebrief{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+.routebrief .stat{background:var(--card);}
+
+.allhead{padding:12px 2px 20px;}.allhead h1{font-size:34px;}.allhead p{max-width:610px;color:var(--muted);margin:8px 0 0;}
+.daygrid{display:grid;gap:10px;}.dsum{background:var(--card);border:1px solid var(--line);border-radius:17px;padding:16px;
+  display:block;width:100%;text-align:left;font-family:inherit;cursor:pointer;min-height:132px;position:relative;overflow:hidden;}
+.dsum:after{content:'→';position:absolute;right:15px;bottom:12px;color:var(--accent);font-size:20px;}
+.dsum .dt{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-deep);}
+.dsum h3{font-size:19px;font-weight:700;margin:7px 24px 8px 0;}.dsum p{margin:0 30px 0 0;font-size:13px;color:var(--muted);}
+footer{padding:26px var(--pad) 30px;text-align:center;font-size:11px;color:var(--muted);}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:7px;}
+@media (hover:hover){button:hover,a.btn:hover,.srow:hover,.dsum:hover{transform:translateY(-1px);}.dsum:hover{border-color:var(--accent);}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}*{animation:none!important;transition:none!important;}}
+@media (forced-colors:active){.brandmark,.herocity:before,.pulse{forced-color-adjust:none;}.dayhero,.now{border:1px solid CanvasText;}}
+@media (max-width:899px){body{padding-bottom:calc(92px + env(safe-area-inset-bottom));}.tabs{position:fixed;left:var(--pad);right:var(--pad);
+  bottom:calc(10px + env(safe-area-inset-bottom));}.appbar{z-index:940;backdrop-filter:none;}footer{padding-bottom:20px;}}
+@media (min-width:640px){:root{--pad:24px}.daystats{grid-template-columns:repeat(4,1fr)}.daygrid{grid-template-columns:repeat(2,1fr)}
+  .route-layout{grid-template-columns:minmax(0,1.12fr) minmax(300px,.88fr)}.route-copy{position:sticky;top:150px}.dayhero{padding:30px}.now h2{font-size:30px}}
+@media (min-width:900px){body{padding-bottom:0}.appbar{position:sticky;top:0;padding-bottom:9px}.appbar-inner{display:grid;grid-template-columns:auto minmax(300px,460px) auto;align-items:center;gap:18px}
+  .hrow{justify-content:flex-start}.tripmeta{display:block}.cityswitch{margin:0}.tabs{position:static;display:flex;background:transparent;border:0;box-shadow:none;backdrop-filter:none;padding:0;gap:3px}
+  .tabs button{min-width:88px;min-height:44px;color:var(--muted);display:flex;padding:8px 12px}.navicon{display:none}.tabs button[aria-selected="true"]{color:#fff}
+  main{padding-top:28px}.workspace{grid-template-columns:minmax(0,1fr) 330px;gap:26px}.aside{position:sticky;top:96px}.daygrid{grid-template-columns:repeat(3,1fr)}
+  footer{padding-bottom:34px}.daynav{margin-inline:0;padding-inline:1px}.dayhero{border-radius:28px}}
+</style>
+</head>
+<body data-city="sf">
+<a class="skip" href="#view">İçeriğe geç</a>
+<header class="appbar">
+  <div class="appbar-inner">
+    <div class="hrow">
+      <div class="brand"><span class="brandmark" aria-hidden="true"></span>California <em>2026</em></div>
+      <div class="tripmeta">6–16 Ağustos · aile rotası</div>
+      <div class="clock mono" id="clock" aria-label="Yerel saat">--:--</div>
+    </div>
+    <div class="cityswitch" role="group" aria-label="Şehir seçimi">
+      <button id="btn-sf" data-city="sf" aria-pressed="true">San Francisco · 6–10 Ağu</button>
+      <button id="btn-la" data-city="la" aria-pressed="false">Los Angeles · 10–16 Ağu</button>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Plan görünümü">
+      <button role="tab" data-tab="today" aria-selected="true" aria-controls="view" tabindex="0" id="t-today"><span class="navicon" aria-hidden="true">●</span><span>Bugün</span></button>
+      <button role="tab" data-tab="all" aria-selected="false" aria-controls="view" tabindex="-1" id="t-all"><span class="navicon" aria-hidden="true">≡</span><span>Tüm plan</span></button>
+      <button role="tab" data-tab="map" aria-selected="false" aria-controls="view" tabindex="-1" id="t-map"><span class="navicon" aria-hidden="true">↗</span><span>Rota</span></button>
+    </nav>
+  </div>
+</header>
+<main id="view" role="tabpanel" aria-live="polite" aria-labelledby="t-today" tabindex="-1"></main>
+<footer>Süreler tahminidir, canlı trafik yoktur.<br>Navigasyon Google Maps'e devredilir.<br><span class="mono" id="ver" style="opacity:.65"></span></footer>
+
+<!-- ============================================================
+     KANONİK PLAN VERİSİ · BU BLOĞU DEĞİŞTİRMEYİN
+     Plan değişikliğinde YALNIZCA bu bloğu düzenleyin.
+     status : "locked" | "pending" | "tbd" | null
+     mode   : "walk" | "drive" | "uber" | "fly" | "boat" | "cable"
+     status : "locked" rezerve | "set" karar kesin, rezervasyonsuz | "pending" bekleniyor | "tbd" karar yok
+     sub    : true  -> zaman çizelgesinde alt olay, haritada pin yok
+     ============================================================ -->
+<script id="plan-data" type="application/json">
+{"version":"2026-08-04.1","updated":"4 Ağustos 2026","cities":{"sf":{"name":"San Francisco","hotel":"Hyatt Regency, 4 Embarcadero Center","days":[{"id":"sf06","date":"2026-08-06","label":"6 Ağu Per","title":"Varış - 1 hedef","stops":[{"time":"13:00","name":"SFO iniş","lat":37.6213,"lng":-122.379,"sub":true,"note":"Bagaj ve terminalden çıkış 14:15-14:45"},{"time":"15:00","name":"Hyatt Regency","lat":37.7943,"lng":-122.3966,"sub":true,"note":"Oda 16:00'dan önce hazır olmayabilir, bagajı bırakıp çıkın","mode":"uber","legMin":30},{"time":"16:00","name":"HEDEF 1 - Ferry Building","lat":37.7955,"lng":-122.3937,"note":"Geç öğle yemeği, market formatı. ARADA: Embarcadero kıyı şeridi, gemi iskeleleri ve Bay Bridge. KURAL: kimse uyumasın, 21:30-22:00 uyku. GÜVENLİK: Tenderloin bölgesinden uzak durun, Union Square'in hemen batısında. Metro istasyonları ve ara sokaklarda uyuşturucu ve evsizlik görünür; Powell/Market çevresine dikkat. Gündüz ve ana caddelerde sorun yok. SİS: SF sisinin adı Karl.","mode":"walk","legMin":6,"badge":"Tek hedef"},{"time":"17:00","name":"Hyatt Regency - reset","lat":37.7943,"lng":-122.3966,"sub":true,"note":"Ferry Building'den 6 dk yürüme. Üst değişimi. Sens otelin kompleksinde, 18:25'te asansörle inersiniz","mode":"walk","legMin":6},{"time":"18:30","name":"Sens","lat":37.7945,"lng":-122.3972,"meal":true,"status":"locked","note":"Yunan-Akdeniz - 4,3/989 - Otel kompleksinin içinde, sıfır ulaşım","phone":"+14153620645","close":"21:00","budget":"180-230 USD","mode":"walk","legMin":8}]},{"id":"sf07","date":"2026-08-07","label":"7 Ağu Cum","title":"Wharf ve körfez turu","stops":[{"time":"11:15","name":"Otelden çıkış - WAYMO 1","lat":37.7943,"lng":-122.3966,"sub":true,"note":"WAYMO 1 - İLK DENEME - 11:15'te çıkış, hedef PIER 39 GİRİŞİ (Beach & Powell), 12 dk. Kısa bacak, gündüz, tekneye 105 dk pay var. Uygulama kurulumu veya doğrulama sürtünmesi varsa burada yaşarsınız, maliyeti sıfır. GEÇİŞ KURALI: tahmini varış 8 dk altıysa binin, 8-15 dk ise tampona bakın, 15 dk üstüyse Uber. Uygulamayı seyahat öncesi indirip hesap açın, ilk kullanımda doğrulama isteyebiliyor. Havalimanı bağlantılarında çalışmıyor"},{"time":"11:30","name":"HEDEF 1 - Pier 39 ve deniz aslanları","lat":37.8087,"lng":-122.4098,"note":"DENİZ ASLANLARI K-DOCK'ta, iskelenin BATI kenarında, marina tarafında. Girişten sağa, 5 dk yürüme. ÜCRETSİZ, 24 saat açık, 15 dk yeter. SEZON UYARISI: haziran-temmuzda sürünün çoğu Channel Islands'a üremeye iniyor, temmuz sonundan itibaren dönüyorlar; tipik sayı 150-600. 7 Ağustos tam dönüş eşiğinde, kalabalık sürü ihtimali iyi ama GARANTİ DEĞİL. Gitmeden sabah Pier 39 canlı kamerasına bakın; boşsa 15 dakikayı Musée'ye kaydırın. Sonra Pier 39 iç sokağı: sokak müzisyenleri, jonglörler, dükkanlar, 30 dk. HEDİYELİK EŞYA UYARISI: dükkanlarda Çin malı ürünlere yüksek fiyat isteniyor. Aquarium of the Bay aynı yerde, ~42 USD, opsiyonel","mode":"uber","legMin":12,"badge":"Ücretsiz"},{"time":"12:25","name":"Batı yönünde Pier 43½ yürüyüşü","lat":37.8085,"lng":-122.4157,"sub":true,"note":"Embarcadero boyunca batı yönünde 8-10 dk. TEK YÖN KURALI: bugün doğudan batıya ilerliyorsunuz, hiçbir yere geri dönmüyorsunuz","mode":"walk","legMin":10},{"time":"13:00","name":"HEDEF 2 - Golden Gate Bay Cruise","lat":37.8085,"lng":-122.4157,"status":"locked","budget":"83,40 EUR","note":"Red and White Fleet - 60 dakika - BİLET ALINDI, 83,40 EUR (yetişkin 30, Zeynep 23). GetYourGuide operatör sitesinden ucuz çıktı: orada 39+39+29=107 USD idi. 24 saat ücretsiz iptal hakkı var. BULUŞMA: Pier 43½, Red and White gişesi, Taylor ve Embarcadero köşesi, yengeç tabelasının arkasında. 12:40'ta orada olun. Rota: Golden Gate altından geçip Alcatraz etrafından dönüyor; Marin Headlands, Sausalito, Angel Island. Anlatım kulaklıkla, 16 dilde. ÜŞÜYECEKSİNİZ: mont veya polar şart. 13:00 seçildi çünkü öğleden sonra körfezde rüzgar sertleşiyor ve yemek tur sonrasına kaldı. Deniz tutmasına hassassanız en üst kata çıkmayın","mode":"walk","legMin":8,"badge":"Bilet alındı"},{"time":"14:10","name":"Musée Mécanique","lat":37.8098,"lng":-122.4177,"sub":true,"note":"Pier 45 - 4,7/8.382 - GİRİŞ ÜCRETSİZ, her gün 10:00-20:00. 100 yıllık bozuk parayla çalışan makineler, oyunlar, falcılar, mekanik müzik kutuları. BOZUK PARA GÖTÜRÜN, içeride bozdurma makinesi de var. TUR ÖNCESİNDEN SONRASINA ALINDI: iskeleye geç kalma riski ve doğu-batı zikzağı böylece ortadan kalktı","mode":"walk","legMin":5},{"time":"14:45","name":"Öğle yemeği - Boudin Bakery","lat":37.8085,"lng":-122.4149,"sub":true,"note":"160 Jefferson St - 4,4/18.437 - SF'nin ekşi maya kurumu, camdan ekmek yapımını izliyorsunuz. Clam chowder deniz ürünü ama sandviç, pizza 16 USD, hindi-avokado, grilled cheese var. 21:00'e kadar açık. Ayakta sandviç istemiyorsanız üst kattaki BISTRO BOUDIN oturmalı servis veriyor, aynı bina. YEMEK TUR SONRASINA ALINDI: dolu mideyle bir saatlik körfez turu deniz tutması için en kötü kombinasyon","mode":"walk","legMin":4},{"time":"15:45","name":"Ghirardelli Square","lat":37.8058,"lng":-122.4229,"sub":true,"note":"Eski çikolata fabrikası, şimdi restoran ve kafe alanı. Yeni hedef değil, batı yönlü yürüyüşün bittiği nokta. Dondurma molası. 16:15'te ayrılın","mode":"walk","legMin":10},{"time":"16:15","name":"Alamo Square - Painted Ladies","lat":37.7764,"lng":-122.4346,"note":"OPSİYONEL EK BACAK - Ghirardelli'den Uber 15 dk, 18-22 USD. Ünlü Viktorya evleri parkın doğu kenarında, arkalarında downtown silüeti. ÜCRETSİZ, kuyruk yok, çimenden bakılıyor, 30-40 dk yeter. Ağustos akşamüstü aydınlık ve ışık cepheye geliyor. Video araştırmasında gerçek eksik ama koridora oturmuyor diye kenara konmuştu, ayrı bacak olarak geri geldi. UYARI: parkın kendisi sorunsuz ama çevresinde dolaşmayın; fotoğrafı çekin, Uber'i park kenarından çağırın. Yorgunluk varsa bu bacak atlanır, Ghirardelli'den doğrudan otele dönülür","mode":"uber","legMin":15,"badge":"Opsiyonel"},{"time":"17:40","name":"Hyatt Regency - reset","lat":37.7943,"lng":-122.3966,"sub":true,"note":"Alamo Square'den Uber 20 dk, 20-25 USD. Duş ve üst değişimi. 19:10'da tekrar çıkın","mode":"uber","legMin":20},{"time":"19:30","name":"Sabor Gaúcho Prime","lat":37.7959,"lng":-122.4215,"meal":true,"status":"locked","note":"Brezilya rodizio - 4,8/565 - Sınırsız. Çocuk fiyatını sorun. K1 İSTİSNASI: üst bant 280 USD, tavanı 30 USD aşıyor","phone":"+14155039366","close":"22:00","budget":"230-280 USD","mode":"uber","legMin":15}]},{"id":"sf08","date":"2026-08-08","label":"8 Ağu Cmt","title":"GOLDEN GATE GÜNÜ","stops":[{"time":"12:00","name":"Golden Gate Welcome Center","lat":37.8078,"lng":-122.475,"sub":true,"note":"WAYMO 2 - MANZARA BACAĞI - 12:00'de otelden çıkış, 22 dk. Planın en uzun ve en manzaralı şehir içi yolculuğu: Embarcadero'dan Presidio'ya, şehri boydan boya geçiyorsunuz. Sert saat yok, Fort Point 17:00'de kapanıyor, bol tampon. GEÇİŞ KURALI: 8 dk altıysa binin, 8-15 dk ise tampona bakın, 15 dk üstüyse Uber. | Köprünün güney ayağı, ilk temas. Ağustosta sis genelde 11:00 civarı dağılıyor. ANLATI: rengi International Orange, siste görünürlük ve doğanın yeşiliyle uyum için seçilmiş; saatte 160 km rüzgara dayanıklı, 1930'larda tamamlanmış. WAYMO deneyin","mode":"uber","legMin":22},{"time":"12:45","name":"HEDEF 1 - Fort Point","lat":37.8106,"lng":-122.4771,"note":"4,8/4.106 - ÜCRETSİZ - Köprünün TAM ALTINDA, 1850'lerden tuğla kale. Cumartesi 10:00-17:00","badge":"Ücretsiz","mode":"uber","legMin":5},{"time":"13:45","name":"Crissy Field kıyı yürüyüşü","lat":37.81,"lng":-122.4657,"sub":true,"note":"Fort Point'ten Tunnel Tops'a sahil boyunca 15 dk. Torpedo Wharf iskelesi, kartpostal açısı"},{"time":"14:15","name":"HEDEF 2 - Tunnel Tops - öğle yemeği","lat":37.8029,"lng":-122.4563,"note":"4,9/1.366 - Köprüye YUKARIDAN bakıyor. YEMEK: Presidio Pop Up food truck alanı, cumartesi 09:00-17:30. Hazır masalar, manzaralı piknik alanları, bira. TATLI: Treats By The Bay 5,0/417. KAÇININ: Il Parco 3,4/277","mode":"walk","legMin":12,"badge":"Yemek ve bira"},{"time":"16:00","name":"HEDEF 3 - Baker Beach","lat":37.7936,"lng":-122.4836,"note":"4,7/2.527 - UCRETSIZ - Kopruyu guneybatidan. ALTIN SAAT. Ruzgarli, katmanli giyinin. 16:50'de ayrilin. ACIK SORU - LAND'S END: videolarda koprunun en iyi dort manzara noktasindan biri olarak geciyor (digerleri Fort Point, Battery Spencer, Baker Beach). Sehir icinde, Baker Beach'in kuzeybatisinda, okyanus kiyisi patikasi. Baker Beach'in YERINE mi gecer YANINA mi eklenir, karar verilmedi. Battery Spencer Marin tarafinda ve aracsiz erisilmiyor, elendi","mode":"uber","legMin":12,"badge":"Altın saat"},{"time":"17:15","name":"Hyatt Regency - reset","lat":37.7943,"lng":-122.3966,"sub":true,"note":"Duş, üst değişimi, kumu üstünüzden atın. 18:35'te tekrar çıkın","mode":"uber","legMin":25},{"time":"19:00","name":"Bocconcino","lat":37.7996,"lng":-122.4086,"meal":true,"status":"locked","note":"İtalyan trattoria - 4,7/416 - Küçük ve sakin salon, el yapımı makarna. Kalamardan uzak durun","phone":"+14159326189","close":"22:00","budget":"180-220 USD","mode":"uber","legMin":10}]},{"id":"sf09","date":"2026-08-09","label":"9 Ağu Paz","title":"Tepeler - cable car - Hyde Street","stops":[{"time":"11:30","name":"California hattı terminali - Drumm & California","lat":37.7935,"lng":-122.3966,"sub":true,"note":"Otelden 5 dk yürüme. DÜZELTME: Union Square Powell hattının terminali, California hattının değil. California hattı buradan başlayıp Chinatown'dan geçerek Nob Hill'e tırmanıyor. BİLET: günlük kart 13 USD, tek biniş 8 USD; bugün iki kez bineceksiniz, günlük kart alın","mode":"walk","legMin":5},{"time":"11:45","name":"HEDEF 1 - Chinatown","lat":37.7908,"lng":-122.4056,"note":"Grant Avenue durağında inin. Dragon Gate ve Grant Avenue boyunca yürüyün. ÖĞLE YEMEĞİ: Hong Kong Clay Pot, 960 Grant Ave, 4,4/1.796, ikinci kat, güveç ve tatlı ekşi tavuk, pazar 11:00-14:30. Alternatif: spicy & cloud, 823 Clay St, 4,7/277. FAL KURABİYESİ: Golden Gate Fortune Cookie, 56 Ross Alley, 4,5/5.047, her gün 09:00-19:00, elde katlanışını izliyorsunuz, sıcak örnek ikram ediyorlar. WAYMO deneyin","mode":"cable","legMin":12,"badge":"California hattı"},{"time":"13:30","name":"California Street - yokuş fotoğrafı","lat":37.7921,"lng":-122.4098,"sub":true,"note":"FOTOĞRAF NOKTASI. California ve Powell köşesi, Nob Hill tepesi. Doğuya aşağı bakın: dik yokuş, raylar, tırmanan cable car, dipte Bay Bridge. Öğleden sonra güneş arkanızda. ALTERNATİF: bir kaynak gün batımında daha iyi diyor; 9 Ağustos gün batımı 20:10, o saatte Indigo'dasınız","mode":"cable","legMin":8,"badge":"Fotograf"},{"time":"13:50","name":"Nob Hill ve Ina Coolbrith Park","lat":37.7983,"lng":-122.4135,"sub":true,"note":"Grace Cathedral yolun üstünde. OPSİYONEL: CABLE CAR MUSEUM, 1201 Mason St, 4,7/7.065, GİRİŞ ÜCRETSİZ, pazar 10:00-17:00, çalışan gerçek motorlar ve makaralar, 15 dakikada gezilir. INA COOLBRITH PARK: 4,8/1.669, araştırmadaki en yüksek puan; körfez, Bay Bridge, Transamerica, Coit Tower, Chinatown birden. 130 basamak ama zaten yukarıdasınız","mode":"walk","legMin":6},{"time":"15:45","name":"HEDEF 2 - Lombard Street - Russian Hill","lat":37.8021,"lng":-122.4187,"note":"Powell-Hyde hattıyla gidin, bu iniş SF'nin meşhur manzarası, körfez arkanızda. KALABALIK UYARISI: pazar öğleden sonrası haftanın en yoğun dilimi, iki kaynak turistlerin beş dakikalık iniş için saatlerce beklediğini söylüyor. Çözüm: yukarıdan bakın ve fotoğraf çekin, aşağı inmeye çalışmayın","mode":"cable","legMin":15},{"time":"16:15","name":"Swensen's","lat":37.799,"lng":-122.4192,"sub":true,"note":"4,6/1.120 - 1999 Hyde St, cable car hattının üstünde. 1948'den beri orijinal dükkan. Junior top 5 USD. Pazartesi kapalı, pazar 12:00-22:00"},{"time":"17:00","name":"HEDEF 3 - The Buena Vista","lat":37.8065,"lng":-122.4207,"note":"4,6/8.210 - Hyde Street'in kuzey ucu, cable car dönüş noktası. IRISH COFFEE 1952'DE BURADA İCAT EDİLDİ. Sadece içki içecekseniz doğrudan bara oturun. Zeynep için sıcak çikolata ve carrot cake. 45 DAKİKA: 17:45'te ayrılın. YOL ÜSTÜNDE: Fort Mason Park, eski liman depolarının kültür merkezine çevrildiği yeşil alan, Buena Vista ile Indigo arasında, ücretsiz","phone":"+14154745044","close":"23:00","mode":"cable","legMin":12,"badge":"Irish coffee"},{"time":"18:00","name":"Hyatt Regency - reset","lat":37.7943,"lng":-122.3966,"sub":true,"note":"Buena Vista'dan 15 dk. Son gece, valiz de toplayabilirsiniz. 18:40'ta tekrar çıkın. NOT: otel Buena Vista ile Indigo'nun doğusunda, geri gidip tekrar batıya geliyorsunuz. Ekstra 50 USD Uber","mode":"uber","legMin":15},{"time":"19:00","name":"Indigo","lat":37.8006,"lng":-122.437,"meal":true,"status":"locked","note":"Kaliforniya, burger - 4,9/338 - Otelden 15-20 dk. Kapanış 21:00, iki saatiniz var. Smash burger imza yemek","phone":"+14083868120","close":"21:00","budget":"190-230 USD","mode":"uber","legMin":18},{"time":"20:45","name":"Hyatt Regency","lat":37.7943,"lng":-122.3966,"sub":true,"note":"Valiz toplama, ertesi sabah LA uçuşu","mode":"uber","legMin":15}]},{"id":"sf10","date":"2026-08-10","label":"10 Ağu Pzt","title":"San Francisco to Los Angeles","stops":[{"time":"10:00","name":"Otelden çıkış","lat":37.7943,"lng":-122.3966,"sub":true,"note":"Check-out"},{"time":"11:00","name":"SFO","lat":37.6213,"lng":-122.379,"note":"LA uçuşu","mode":"uber","legMin":30}]}]},"la":{"name":"Los Angeles","hotel":"The London West Hollywood, 1020 N San Vicente Blvd","days":[{"id":"la10","date":"2026-08-10","label":"10 Ağu Pzt","title":"LA varış - The Grove","stops":[{"time":"14:00","name":"The London West Hollywood","lat":34.09,"lng":-118.3855,"note":"Check-in, Crown Suite, teras. Uçuş saati JSON'da yok; 14:00 kullanıcı hesabı. Sogno 20:00 olduğu için 6 saat tampon var"},{"time":"17:00","name":"The Grove","lat":34.0722,"lng":-118.3574,"note":"WAYMO 3 - LA TESTİ - 17:00'de otelden çıkış, 15 dk, hava aydınlık (gün batımı ~19:50). ASIL İŞLEVİ: LA kapsamasını sınamak. Çalışırsa ertesi gün MOOHAN'a güvenle binersiniz, çalışmazsa o geceyi Uber'e ayarlarsınız. Sogno 20:00'de, üç saat payınız var. GEÇİŞ KURALI: 8 dk altıysa binin, 15 dk üstüyse Uber. | Alışveriş ve çeşmeler","mode":"uber","legMin":15},{"time":"18:00","name":"Original Farmers Market","lat":34.072,"lng":-118.3604,"note":"1934'ten kalan yemek çarşısı. 21:00'de kapanıyor","mode":"walk","legMin":5},{"time":"20:00","name":"Sogno Toscano","lat":34.0721,"lng":-118.3572,"meal":true,"status":"locked","note":"İtalyan - 4,7/601 - The Grove içinde, çeşmelerin yanında. Outdoor masa. K15 İSTİSNASI: reset zaten 14:00'te oldu, ikinci otel dönüşü yok","phone":"+13238799443","close":"22:00","budget":"200-250 USD","mode":"walk","legMin":5}]},{"id":"la11","date":"2026-08-11","label":"11 Ağu Sal","title":"Universal Studios","stops":[{"time":"07:30","name":"Otelden çıkış","lat":34.09,"lng":-118.3855,"note":"Uber ile. LA istisnası: K13 geçerli değil, Universal tam gün kullanılacak"},{"time":"09:00","name":"Universal Studios Hollywood","lat":34.1381,"lng":-118.3534,"note":"Express Pass elinizde. Bu güne ikinci aktivite eklenmeyecek","mode":"uber","legMin":30},{"time":"16:15","name":"Parktan çıkış","lat":34.1381,"lng":-118.3534,"sub":true,"badge":"Kritik saat","note":"16:45-17:15 en pahalı Uber penceresi. 16:15'te çıkın; kalabalıkta Uber'e binmek 10-15 dk alır"},{"time":"17:10","name":"The London - reset","lat":34.09,"lng":-118.3855,"note":"Duş, üst değişimi, 45-60 dk. 18:10'da tekrar çıkın","mode":"uber","legMin":35},{"time":"19:00","name":"MOOHAN Korean BBQ","lat":34.0626,"lng":-118.2982,"meal":true,"status":"pending","note":"Sınırsız Kore BBQ - 4,7/722 - Tabletten sipariş, Zeynep bu formatı Amsterdam'da sevmişti. SAAT ZİNCİRİ: park 16:15 çıkış, 17:10 otel, 18:10 çıkış, 18:40-18:55 varış. REZERVASYON: Resy'de, OpenTable'da değil. Çıkmazsa walk-in. GİRİŞ KADEMESİ ALIN (39,99), marine etlere yüklenin. Zeynep 12 yaşında, tam ücret bekleyin. Otopark 3 USD validasyonlu","phone":"+12132321136","close":"02:00","budget":"165-235 USD","mode":"uber","legMin":25}]},{"id":"la12","date":"2026-08-12","label":"12 Ağu Çar","title":"Citadel Outlets","stops":[{"time":"11:00","name":"Citadel Outlets","lat":33.9948,"lng":-118.1611,"note":"UberX ile gidiş. Ücretsiz bagaj emanetini gün boyu kullanın","mode":"uber","legMin":35,"badge":"Bagaj emaneti"},{"time":"16:30","name":"UberXL ile dönüş","lat":33.9948,"lng":-118.1611,"sub":true,"note":"16:30'da çağırın, 17:00'de değil. Buluşma noktasını girerken belirleyin"},{"time":"17:30","name":"The London","lat":34.09,"lng":-118.3855,"note":"Poşetleri odaya bırakın, 19:00'da tekrar çıkın. Bu yüzden akşam 19:30'dan önce kurulamaz","mode":"uber","legMin":45},{"time":"19:30","name":"H&H Brazilian Steakhouse","lat":34.0759,"lng":-118.3765,"meal":true,"status":"locked","note":"Brezilya rodizio - 4,8/2.004 - Sınırsız, kırmızı/yeşil kart. 22:00 kapanışı Citadel gecikmesini soğuruyor. K1 İSTİSNASI: üst bant 260 USD, tavanı 10 USD aşıyor","phone":"+14242847733","close":"22:00","budget":"230-260 USD","mode":"uber","legMin":8}]},{"id":"la13","date":"2026-08-13","label":"13 Ağu Per","title":"Santa Monica - araç günü","stops":[{"time":"11:00","name":"Enterprise WeHo Ramada","lat":34.0836,"lng":-118.3806,"note":"Premium SUV alımı. Otelden 10 dk yürüme","mode":"walk","legMin":10},{"time":"12:00","name":"Santa Monica Pier","lat":34.0089,"lng":-118.4973,"note":"Downtown otopark yapılarına park edin, ilk 90 dk ücretsiz. Pier otoparkına girmeyin","mode":"drive","legMin":35,"badge":"Park notu"},{"time":"14:00","name":"Ocean Ave - Third Street Promenade","lat":34.0158,"lng":-118.4963,"note":"Palisades Park üzerinden yürüyüş. Sunset kovalanmayacak","mode":"walk","legMin":10},{"time":"17:00","name":"The London","lat":34.09,"lng":-118.3855,"note":"Araç gece valede kalıyor (75 USD ödendi), tekrar çıkarılmayacak. Duş ve üst değişimi. Mel's 8 dk yürüme, 19:20'de çıkın","mode":"drive","legMin":40},{"time":"19:30","name":"Mel's Drive-In","lat":34.093,"lng":-118.379,"meal":true,"status":"set","note":"Amerikan diner - 4,4/3.174 - REZERVASYON ALMIYOR, plan kararı kesin. OTELDEN 8 DK YÜRÜME. PERŞEMBE 03:00'E KADAR AÇIK. Milkshake paylaşın","phone":"+13108547201","close":"03:00","budget":"120-160 USD","mode":"walk","legMin":8}]},{"id":"la14","date":"2026-08-14","label":"14 Ağu Cum","title":"Serbest gün - Beverly Hills, Melrose","stops":[{"time":"10:30","name":"Araç iadesi - Enterprise","lat":34.0836,"lng":-118.3806,"note":"Gün buradan başlıyor, dönüş Uber'ı gerekmiyor","mode":"walk","legMin":10},{"time":"11:30","name":"Rodeo Drive","lat":34.0696,"lng":-118.4014,"note":"WAYMO 4 - 11:30'da Enterprise'dan çıkış (otele 10 dk yürüme), 12 dk. Gün tamamen serbest, sıfır baskı. BEVERLY HILLS BELİRSİZ: belediye uzun süre kapsam dışıydı, uygulamada adres girip 30 saniyede kontrol edin. Kapsam dışıysa aynı gün ikinci şans: 14:00 Rodeo'dan Melrose'a, orası kesin kapsamda. GEÇİŞ KURALI: 8 dk altıysa binin, 15 dk üstüyse Uber. | Beverly Hills, Canon Drive","mode":"uber","legMin":12},{"time":"14:00","name":"Melrose Avenue","lat":34.0837,"lng":-118.3735,"note":"Melrose Place ve butik hattı. WAYMO 4 YEDEĞİ: Beverly Hills kapsam dışı çıktıysa bu bacağı deneyin, Melrose kesin kapsamda","mode":"uber","legMin":12},{"time":"16:30","name":"Sunset Plaza","lat":34.0918,"lng":-118.381,"note":"Otele yürüme mesafesinde","mode":"uber","legMin":8},{"time":"17:00","name":"The London - reset","lat":34.09,"lng":-118.3855,"sub":true,"note":"Sunset Plaza otele yürüme mesafesinde. Duş ve üst değişimi. 19:20'de çıkın, GRANVILLE 8 dk","mode":"walk","legMin":8},{"time":"19:30","name":"GRANVILLE","lat":34.0772,"lng":-118.3807,"meal":true,"status":"locked","note":"Amerikan fine casual - 4,5/1.564 - CUMA 22:00'YE KADAR AÇIK, iki buçuk saatiniz var. Menü Zeynep için tamamen tanıdık","phone":"+14245225161","close":"22:00","budget":"180-220 USD","mode":"uber","legMin":8}]},{"id":"la15","date":"2026-08-15","label":"15 Ağu Cmt","title":"Yıldönümü","stops":[{"time":"10:00","name":"Çatı havuzu - The London","lat":34.09,"lng":-118.3855,"note":"Program kasten hafif, akşam için enerji kalsın"},{"time":"13:00","name":"Geç brunch","lat":34.09,"lng":-118.3855,"sub":true,"note":"Otelden uzaklaşmayın"},{"time":"17:30","name":"The London - yıldönümü hazırlığı","lat":34.09,"lng":-118.3855,"sub":true,"note":"Gün zaten otelde geçti. Hazırlık için pay bırakıldı, 19:20'de çıkın"},{"time":"19:30","name":"La Boheme","lat":34.0904,"lng":-118.3737,"meal":true,"status":"pending","note":"Bahçe restoranı - 4,5/1.872 - Dev ficus ağaçları. Cumartesi 24:00 kapanış, saat baskısı yok. PATIO TALEBİ GÖNDERİLDİ, CEVAP BEKLENİYOR","phone":"+13238482360","close":"24:00","budget":"200-250 USD","mode":"uber","legMin":6}]},{"id":"la16","date":"2026-08-16","label":"16 Ağu Paz","title":"Dönüş","stops":[{"time":"14:00","name":"Otelden çıkış","lat":34.09,"lng":-118.3855,"status":"pending","note":"Standart check-out 12:00. Marco'dan 14:00 geç çıkış talep edildi"},{"time":"15:00","name":"LAX - TBIT","lat":33.9416,"lng":-118.4085,"note":"Uluslararası terminal, T-3 saat. Kalkış 18:00","mode":"uber","legMin":45}]}]}}}
+</script>
+
+<script>
+let PLAN;
+try{ PLAN=JSON.parse(document.getElementById('plan-data').textContent); }
+catch(e){
+  document.getElementById('view').innerHTML=
+    '<div class="disc"><b>Plan verisi okunamadı.</b><br>JSON bloğunda sözdizimi hatası var: '+
+    String(e.message).replace(/[<>&]/g,'')+'</div>';
+  throw e;
+}
+let CITY='sf',TAB='today',DAY=null,ACTIVE_MAP=null;
+const MODES={walk:'Yürüme',drive:'Araç',uber:'Uber',fly:'Uçuş',boat:'Tekne',cable:'Cable car'};
+const GMODE={walk:'walking',drive:'driving',uber:'driving',boat:'transit',cable:'transit',fly:'driving'};
+
+const nowT=()=>{const d=new Date();return d.getHours()*60+d.getMinutes();};
+const toMin=t=>{const[h,m]=t.split(':').map(Number);return h*60+m;};
+const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+const days=()=>PLAN.cities[CITY].days;
+const findToday=()=>days().find(d=>d.date===todayISO())||null;
+const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const gmaps=s=>`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
+const mainStops=day=>day.stops.filter(s=>!s.sub);
+const mapStops=day=>day.stops.filter((s,i,all)=>!all.some((other,j)=>j<i&&other.lat===s.lat&&other.lng===s.lng));
+const shortNote=(s,n=180)=>!s?'':(s.length>n?s.slice(0,n-1).trim()+'…':s);
+const cityName=()=>PLAN.cities[CITY].name;
+const dayDate=day=>new Intl.DateTimeFormat('tr-TR',{day:'numeric',month:'long',weekday:'long'})
+  .format(new Date(day.date+'T12:00:00'));
+
+function dayGmaps(day){
+  const p=mainStops(day);
+  if(p.length<2)return p.length?gmaps(p[0]):'#';
+  const o=p[0],d=p[p.length-1],w=p.slice(1,-1).map(s=>`${s.lat},${s.lng}`).join('|');
+  const modes=[...new Set(p.map(s=>GMODE[s.mode]).filter(Boolean))];
+  const travel=modes.length===1?`&travelmode=${modes[0]}`:'';
+  return `https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lng}&destination=${d.lat},${d.lng}`
+    +(w?`&waypoints=${encodeURIComponent(w)}`:'')+travel;
+}
+function tick(){const d=new Date();document.getElementById('clock').textContent=
+  String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+setInterval(()=>{tick();if(TAB==='today'&&findToday())render();},60000);tick();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick();});
+document.getElementById('ver').textContent='Plan '+PLAN.version;
+
+function setCity(c){CITY=c;DAY=null;document.body.dataset.city=c;
+  document.getElementById('btn-sf').setAttribute('aria-pressed',c==='sf');
+  document.getElementById('btn-la').setAttribute('aria-pressed',c==='la');render();}
+function setTab(t){TAB=t;['today','all','map'].forEach(x=>
+  {const tab=document.getElementById('t-'+x);tab.setAttribute('aria-selected',x===t);tab.tabIndex=x===t?0:-1;});
+  document.getElementById('view').setAttribute('aria-labelledby','t-'+t);render();}
+function pickDay(id){DAY=id;render();}
+function openDay(id){DAY=id;setTab('today');}
+
+function badgeFor(s){const o=[];
+  if(s.status==='locked')o.push('<span class="badge b-ok">Rezervasyon kilitli</span>');
+  if(s.status==='set')o.push('<span class="badge b-ok">Karar kesin · rezervasyonsuz</span>');
+  if(s.status==='pending')o.push('<span class="badge b-warn">Cevap bekleniyor</span>');
+  if(s.status==='tbd')o.push('<span class="badge b-tbd">Karar bekliyor</span>');
+  if(s.close)o.push(`<span class="badge b-info">Kapanış ${esc(s.close)}</span>`);
+  if(s.budget)o.push(`<span class="badge b-info">${esc(s.budget)}</span>`);
+  if(s.badge)o.push(`<span class="badge b-info">${esc(s.badge)}</span>`);
+  return o.length?`<div class="badges">${o.join('')}</div>`:'';
+}
+
+const legRow=s=>s.mode?`<div class="leg">${MODES[s.mode]||'Ulaşım'}${s.legMin?` · yaklaşık ${s.legMin} dk`:''}</div>`:'';
+
+function stopCard(s,n,isToday){
+  const past=isToday&&nowT()>toMin(s.time)+45;
+  const a=[];
+  if(!s.sub)a.push(`<a class="btn line" href="${gmaps(s)}" target="_blank" rel="noopener" aria-label="${esc(s.name)} için yol tarifi">Yol tarifi ↗</a>`);
+  if(s.phone)a.push(`<a class="btn line" href="tel:${s.phone}" aria-label="${esc(s.name)} mekanını ara">Telefon et</a>`);
+  return `${legRow(s)}<div class="stop ${s.meal?'meal':''} ${s.sub?'sub':''} ${past?'past':''}">
+    <div class="t mono">${esc(s.time)}</div><div class="dot">${s.sub?'':n}</div>
+    <article class="card"><div class="cardtop"><h3>${esc(s.name)}</h3><span class="kind">${s.meal?'Akşam':s.sub?'Ara durak':'Durak '+n}</span></div>
+      ${noteBlock(s.note)}${badgeFor(s)}
+      ${a.length?`<div class="cardacts">${a.join('')}</div>`:''}</article></div>`;
+}
+
+function nowCard(day){
+  const t=nowT(),next=day.stops.find(s=>toMin(s.time)>=t);
+  if(!next)return `<div class="now"><div class="lbl"><span class="pulse"></span>Gün tamamlandı</div>
+    <h2>${esc(day.title)}</h2><div class="meta">Bugünkü tüm duraklar geçti.</div></div>`;
+  const d=toMin(next.time)-t;
+  const when=d<=0?'Şimdi':(d<60?`${d} dakika sonra`:`${Math.floor(d/60)} sa ${d%60} dk sonra`);
+  const a=[`<a class="btn" href="${gmaps(next)}" target="_blank" rel="noopener">Yol tarifi ↗</a>`];
+  if(next.phone)a.push(`<a class="btn ghost" href="tel:${next.phone}">Telefon et</a>`);
+  return `<div class="now"><div class="lbl"><span class="pulse"></span>Sıradaki durak</div>
+    <h2>${esc(next.name)}</h2>
+    <div class="meta"><b class="mono">${esc(next.time)}</b> · ${when}${next.close?` · kapanış <b class="mono">${esc(next.close)}</b>`:''}</div>
+    ${next.note?`<div class="meta" style="margin-top:8px">${esc(shortNote(next.note))}</div>`:''}
+    <div class="acts">${a.join('')}</div></div>`;
+}
+
+function dayHero(day,index){
+  return `<section class="dayhero" aria-labelledby="day-title">
+    <div class="eyebrow"><strong>${esc(dayDate(day))}</strong> · ${esc(cityName())}</div>
+    <h1 id="day-title">${esc(day.title)}</h1>
+    <div class="herofoot"><span class="herocity">${esc(PLAN.cities[CITY].hotel)}</span>
+      <span class="daycount mono">Gün ${index+1}/${days().length}</span></div></section>`;
+}
+
+function dayStats(day){
+  const p=mainStops(day),meal=day.stops.find(s=>s.meal),modes=[...new Set(day.stops.map(s=>MODES[s.mode]).filter(Boolean))];
+  const open=day.stops.filter(s=>s.status==='pending'||s.status==='tbd').length;
+  return `<div class="daystats" aria-label="Gün özeti">
+    <div class="stat"><div class="k">Zaman</div><div class="v mono">${esc(day.stops[0].time)}–${esc(day.stops.at(-1).time)}</div></div>
+    <div class="stat"><div class="k">Ana durak</div><div class="v">${p.length} durak</div></div>
+    <div class="stat"><div class="k">Ulaşım</div><div class="v">${esc(modes.slice(0,2).join(' + ')||'Yerinde')}</div></div>
+    <div class="stat"><div class="k">Akşam</div><div class="v">${meal?esc(meal.name):'Serbest'}${open?` · ${open} açık`:''}</div></div>
+  </div>`;
+}
+
+function dayAside(day){
+  const p=mainStops(day),meal=day.stops.find(s=>s.meal),open=day.stops.filter(s=>s.status==='pending'||s.status==='tbd');
+  const anchors=[p[0],p[Math.floor((p.length-1)/2)],meal||p.at(-1)].filter((s,i,a)=>s&&a.indexOf(s)===i);
+  return `<aside class="aside" aria-label="Günün kısa özeti">
+    <section class="panel"><h2 class="panel-title">Günün ritmi</h2><div class="rhythm">${anchors.map(s=>`
+      <div class="rhythm-row"><div class="rhythm-time">${esc(s.time)}</div><div><b>${esc(s.name)}</b>
+      <span>${s.meal?'Akşam yemeği':s===p[0]?'Günün başlangıcı':'Günün ana akışı'}</span></div></div>`).join('')}</div></section>
+    ${open.length?`<section class="panel attention"><h2 class="panel-title">Dikkat gerekenler</h2><p class="panel-copy">Bu gün kesinleşmemiş ${open.length} madde var.</p>
+      <ul>${open.map(s=>`<li><b>${esc(s.name)}</b>: ${s.status==='tbd'?'karar bekliyor':'cevap bekleniyor'}</li>`).join('')}</ul></section>`:''}
+    <section class="panel"><h2 class="panel-title">Otel üssü</h2><p class="panel-copy">${esc(PLAN.cities[CITY].hotel)}</p></section>
+  </aside>`;
+}
+
+function noteBlock(note){
+  if(!note)return '';
+  if(note.length<=260)return `<div class="note">${esc(note)}</div>`;
+  const window=note.slice(0,260),sentence=window.lastIndexOf('. '),space=window.lastIndexOf(' ');
+  const cut=sentence>120?sentence+1:(space>120?space:220);
+  return `<div class="note">${esc(note.slice(0,cut).trim())}</div>
+    <details class="note-more"><summary>Plan detayını aç</summary>
+      <div class="note">${esc(note.slice(cut).trim())}</div></details>`;
+}
+
+/* Şema harita: dış tile sunucusu yok, tamamen yerel SVG */
+function schema(day){
+  const p=mainStops(day);
+  if(!p.length)return '';
+  const W=680,H=430,M=54;
+  const midLat=(Math.min(...p.map(s=>s.lat))+Math.max(...p.map(s=>s.lat)))/2;
+  const k=Math.cos(midLat*Math.PI/180);
+  const xs=p.map(s=>s.lng*k),ys=p.map(s=>s.lat);
+  const dx=(Math.max(...xs)-Math.min(...xs))||1e-4,dy=(Math.max(...ys)-Math.min(...ys))||1e-4;
+  const sc=Math.min((W-2*M)/dx,(H-2*M)/dy);
+  const cx=(Math.min(...xs)+Math.max(...xs))/2,cy=(Math.min(...ys)+Math.max(...ys))/2;
+  const P=p.map(s=>({x:W/2+(s.lng*k-cx)*sc,y:H/2-(s.lat-cy)*sc,s}));
+  const path=P.map((q,i)=>(i?'L':'M')+q.x.toFixed(1)+' '+q.y.toFixed(1)).join(' ');
+  const c=getComputedStyle(document.body).getPropertyValue('--accent').trim();
+  const pins=P.map((q,i)=>`
+    <circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="14" fill="${c}" stroke="#fff" stroke-width="3"/>
+    <text x="${q.x.toFixed(1)}" y="${(q.y+4.5).toFixed(1)}" text-anchor="middle"
+      font-family="JetBrains Mono,monospace" font-size="13" font-weight="800" fill="#fff">${i+1}</text>`).join('');
+  return `<div class="schema"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gün rotası şeması">
+    <rect width="${W}" height="${H}" fill="#FBFBF8" rx="10"/>
+    <path d="${path}" fill="none" stroke="${c}" stroke-width="2.5" stroke-dasharray="8 7" opacity=".55"/>
+    ${pins}</svg></div>`;
+}
+
+function mapStage(day){
+  return `<div class="mapstage">
+    <div id="real-map" class="realmap" role="region" aria-label="${esc(day.title)} gerçek sokak haritası"></div>
+    <div id="map-fallback" class="mapfallback" hidden>
+      <div class="disc"><b>Harita yüklenemedi.</b> Şematik rota gösteriliyor. Yol tarifi düğmeleri çalışmaya devam eder.</div>
+      ${schema(day)}
+    </div>
+  </div>`;
+}
+
+function mountMap(day){
+  const box=document.getElementById('real-map'),fallback=document.getElementById('map-fallback');
+  if(!box)return;
+  const showFallback=()=>{
+    if(ACTIVE_MAP){ACTIVE_MAP.remove();ACTIVE_MAP=null;}
+    box.hidden=true;fallback.hidden=false;
+  };
+  if(!window.L){showFallback();return;}
+  try{
+    const p=mapStops(day),accent=getComputedStyle(document.body).getPropertyValue('--accent').trim();
+    ACTIVE_MAP=L.map(box,{scrollWheelZoom:false,zoomControl:true,attributionControl:true});
+    let tileErrors=0,failed=false;
+    const tiles=L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      maxZoom:19,updateWhenIdle:true,keepBuffer:2,
+      attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+    tiles.on('tileerror',()=>{if(!failed&&++tileErrors>=4){failed=true;showFallback();}});
+    tiles.addTo(ACTIVE_MAP);
+    const points=p.map(s=>[s.lat,s.lng]);
+    const line=L.polyline(points,{color:accent,weight:4,opacity:.82,dashArray:'8 9',lineCap:'round'}).addTo(ACTIVE_MAP);
+    p.forEach((s,i)=>{
+      const icon=L.divIcon({className:'leaflet-div-icon',html:`<div class="map-pin"><span>${i+1}</span></div>`,
+        iconSize:[30,30],iconAnchor:[15,30],popupAnchor:[0,-28]});
+      L.marker([s.lat,s.lng],{icon}).addTo(ACTIVE_MAP).bindPopup(
+        `<div class="map-popup"><b>${esc(s.name)}</b><span>${esc(s.time)}</span><br>
+        <a href="${gmaps(s)}" target="_blank" rel="noopener">Google Maps'te aç ↗</a></div>`
+      );
+    });
+    if(points.length>1){ACTIVE_MAP.fitBounds(line.getBounds(),{padding:[34,34]});if(ACTIVE_MAP.getZoom()>15)ACTIVE_MAP.setZoom(15);}
+    else if(points.length)ACTIVE_MAP.setView(points[0],14);
+    requestAnimationFrame(()=>ACTIVE_MAP&&ACTIVE_MAP.invalidateSize());
+  }catch(e){showFallback();}
+}
+
+function routeList(day){
+  let n=0;
+  const p=mainStops(day);
+  return `<div class="slist">${p.map((s,i)=>{n++;
+    const row=`<a class="srow" href="${gmaps(s)}" target="_blank" rel="noopener" aria-label="${esc(s.name)} konumunu aç">
+      <span class="snum">${n}</span><span class="sn">${esc(s.name)}</span><span class="st">${esc(s.time)}</span></a>`;
+    const next=p[i+1];
+    return row+(next&&next.mode?`<div class="route-leg">${esc(MODES[next.mode]||'Ulaşım')}${next.legMin?` · yaklaşık ${next.legMin} dk`:''}</div>`:'');
+  }).join('')}</div>`;
+}
+
+function routeBrief(day){
+  const p=mainStops(day),minutes=day.stops.reduce((sum,s)=>sum+(Number(s.legMin)||0),0);
+  const modes=[...new Set(day.stops.map(s=>MODES[s.mode]).filter(Boolean))];
+  const first=p[0];
+  return `<div class="routebrief" aria-label="Rota özeti">
+    <div class="stat"><div class="k">Akış</div><div class="v">${p.length} ana durak</div></div>
+    <div class="stat"><div class="k">Kayıtlı ulaşım</div><div class="v mono">${minutes?('~'+minutes+' dk'):'Yerinde'}</div></div>
+    <div class="stat"><div class="k">Başlangıç</div><div class="v">${first?esc(first.name):'Yok'}</div></div>
+    <div class="stat"><div class="k">Modlar</div><div class="v">${esc(modes.join(' + ')||'Yerinde')}</div></div>
+  </div>`;
+}
+
+function dayNav(day,today){
+  return `<div class="daynav" aria-label="Gün seçimi">${days().map(d=>`<button aria-pressed="${d.id===day.id}"
+    class="${today&&today.id===d.id?'today':''}" data-day="${esc(d.id)}" aria-label="${esc(d.label)}, ${esc(d.title)}">
+    ${esc(d.label)}${today&&today.id===d.id?' · bugün':''}</button>`).join('')}</div>`;
+}
+
+function render(){
+  const V=document.getElementById('view'),D=days(),today=findToday();
+  if(ACTIVE_MAP){ACTIVE_MAP.remove();ACTIVE_MAP=null;}
+  if(!DAY)DAY=(today&&today.id)||D[0].id;
+  const day=D.find(d=>d.id===DAY)||D[0],isToday=today&&today.id===day.id;
+  const nav=dayNav(day,today),hero=dayHero(day,D.indexOf(day)),stats=dayStats(day);
+
+  if(TAB==='map'){
+    V.innerHTML=nav+hero+stats+`<div class="route-layout"><section>${mapStage(day)}</section><section class="route-copy">
+      ${routeBrief(day)}
+      <a class="btn full" href="${dayGmaps(day)}" target="_blank" rel="noopener">Tüm rotayı Google Maps'te aç ↗</a>
+      <div class="disc">Kesik çizgi günün yönünü ve durak sırasını gösterir, navigasyon rotası değildir. Gerçek trafik ve yol seçimi için ilgili durağı Google Maps'te açın.</div>
+      ${routeList(day)}</section></div>`;
+    mountMap(day);
+    return;
+  }
+
+  if(TAB==='all'){
+    V.innerHTML=`<header class="allhead"><div class="eyebrow" style="color:var(--accent-deep)">${esc(cityName())}</div>
+      <h1>Tüm seyahat, tek bakışta.</h1><p>Günleri ana ritim, durak sayısı ve akşam planıyla karşılaştır. Ayrıntı için bir güne dokun.</p></header>
+      <div class="daygrid">${D.map(d=>{const m=d.stops.filter(s=>s.meal).map(s=>s.name).join(', ');
+        const pending=d.stops.filter(s=>s.status==='pending'||s.status==='tbd').length;
+        return `<button class="dsum" data-open-day="${esc(d.id)}" aria-label="${esc(d.label)}, ${esc(d.title)} ayrıntısını aç">
+          <div class="dt">${esc(d.label)}${today&&today.id===d.id?' · bugün':''}</div>
+          <h3>${esc(d.title)}</h3><p>${mainStops(d).length} ana durak${m?' · '+esc(m):''}${pending?` · ${pending} açık madde`:''}</p></button>`;}).join('')}</div>`;
+    return;
+  }
+
+  let rail='',placed=false,n=0;const t=nowT();
+  day.stops.forEach(s=>{
+    if(!s.sub)n++;
+    if(isToday&&!placed&&toMin(s.time)>t){rail+=`<div class="nowline"><span>ŞİMDİ</span></div>`;placed=true;}
+    rail+=stopCard(s,n,isToday);
+  });
+
+  V.innerHTML=nav+hero+stats+(isToday?nowCard(day):'')+
+    `<div class="workspace"><section class="timeline-wrap" aria-label="Gün zaman çizelgesi"><div class="rail">${rail}</div></section>${dayAside(day)}</div>`;
+}
+
+document.querySelector('.tabs').addEventListener('keydown',e=>{
+  const tabs=[...document.querySelectorAll('.tabs [role="tab"]')],i=tabs.indexOf(document.activeElement);
+  if(i<0)return;
+  let next=i;
+  if(e.key==='ArrowRight')next=(i+1)%tabs.length;
+  else if(e.key==='ArrowLeft')next=(i-1+tabs.length)%tabs.length;
+  else if(e.key==='Home')next=0;
+  else if(e.key==='End')next=tabs.length-1;
+  else return;
+  e.preventDefault();tabs[next].focus();tabs[next].click();
+});
+
+document.querySelector('.cityswitch').addEventListener('click',e=>{
+  const button=e.target.closest('button[data-city]');
+  if(button)setCity(button.dataset.city);
+});
+document.querySelector('.tabs').addEventListener('click',e=>{
+  const button=e.target.closest('button[data-tab]');
+  if(button)setTab(button.dataset.tab);
+});
+document.getElementById('view').addEventListener('click',e=>{
+  const dayButton=e.target.closest('button[data-day]');
+  const openButton=e.target.closest('button[data-open-day]');
+  if(dayButton)pickDay(dayButton.dataset.day);
+  else if(openButton)openDay(openButton.dataset.openDay);
+});
+window.addEventListener('load',()=>{if(TAB==='map'&&!ACTIVE_MAP)render();});
+
+(function(){
+  const t=todayISO(),sf=PLAN.cities.sf.days.find(d=>d.date===t),la=PLAN.cities.la.days.find(d=>d.date===t);
+  if(la&&(!sf||nowT()>toMin(sf.stops.at(-1).time)))CITY='la';
+  document.body.dataset.city=CITY;
+  document.getElementById('btn-sf').setAttribute('aria-pressed',CITY==='sf');
+  document.getElementById('btn-la').setAttribute('aria-pressed',CITY==='la');
+  render();
+})();
+</script>
+</body>
+</html>
