@@ -256,7 +256,12 @@ const findToday=()=>days().find(d=>d.date===todayISO())||null;
 const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const gmaps=s=>`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`;
 const mainStops=day=>day.stops.filter(s=>!s.sub);
-const mapStops=day=>day.stops.filter((s,i,all)=>!all.some((other,j)=>j<i&&other.lat===s.lat&&other.lng===s.lng));
+const mapStops=day=>day.stops.filter((s,i,all)=>{
+  const same=(other)=>other.lat===s.lat&&other.lng===s.lng;
+  const mainAt=all.findIndex(other=>same(other)&&!other.sub);
+  const firstAt=all.findIndex(same);
+  return i===(mainAt>=0?mainAt:firstAt);
+});
 const shortNote=(s,n=180)=>!s?'':(s.length>n?s.slice(0,n-1).trim()+'…':s);
 const cityName=()=>PLAN.cities[CITY].name;
 const dayDate=day=>new Intl.DateTimeFormat('tr-TR',{day:'numeric',month:'long',weekday:'long'})
@@ -334,12 +339,12 @@ function dayHero(day,index){
       <span class="daycount mono">Gün ${index+1}/${days().length}</span></div></section>`;
 }
 
-function dayStats(day){
-  const p=mainStops(day),meal=day.stops.find(s=>s.meal),modes=[...new Set(day.stops.map(s=>MODES[s.mode]).filter(Boolean))];
+function dayStats(day,routeMode=false){
+  const p=routeMode?mapStops(day):mainStops(day),meal=day.stops.find(s=>s.meal),modes=[...new Set(day.stops.map(s=>MODES[s.mode]).filter(Boolean))];
   const open=day.stops.filter(s=>s.status==='pending'||s.status==='tbd').length;
   return `<div class="daystats" aria-label="Gün özeti">
     <div class="stat"><div class="k">Zaman</div><div class="v mono">${esc(day.stops[0].time)}–${esc(day.stops.at(-1).time)}</div></div>
-    <div class="stat"><div class="k">Ana durak</div><div class="v">${p.length} durak</div></div>
+    <div class="stat"><div class="k">${routeMode?'Rota noktası':'Ana durak'}</div><div class="v">${p.length} durak</div></div>
     <div class="stat"><div class="k">Ulaşım</div><div class="v">${esc(modes.slice(0,2).join(' + ')||'Yerinde')}</div></div>
     <div class="stat"><div class="k">Akşam</div><div class="v">${meal?esc(meal.name):'Serbest'}${open?` · ${open} açık`:''}</div></div>
   </div>`;
@@ -437,22 +442,21 @@ function mountMap(day){
 }
 
 function routeList(day){
-  let n=0;
-  const p=mainStops(day);
-  return `<div class="slist">${p.map((s,i)=>{n++;
+  const p=mapStops(day);
+  return `<div class="eyebrow" style="margin:18px 0 9px">Haritadaki ${p.length} durak</div><div class="slist">${p.map((s,i)=>{
     const row=`<a class="srow" href="${gmaps(s)}" target="_blank" rel="noopener" aria-label="${esc(s.name)} konumunu aç">
-      <span class="snum">${n}</span><span class="sn">${esc(s.name)}</span><span class="st">${esc(s.time)}</span></a>`;
+      <span class="snum">${i+1}</span><span class="sn">${esc(s.name)}</span><span class="st">${esc(s.time)}</span></a>`;
     const next=p[i+1];
     return row+(next&&next.mode?`<div class="route-leg">${esc(MODES[next.mode]||'Ulaşım')}${next.legMin?` · yaklaşık ${next.legMin} dk`:''}</div>`:'');
   }).join('')}</div>`;
 }
 
 function routeBrief(day){
-  const p=mainStops(day),minutes=day.stops.reduce((sum,s)=>sum+(Number(s.legMin)||0),0);
+  const p=mapStops(day),minutes=day.stops.reduce((sum,s)=>sum+(Number(s.legMin)||0),0);
   const modes=[...new Set(day.stops.map(s=>MODES[s.mode]).filter(Boolean))];
   const first=p[0];
   return `<div class="routebrief" aria-label="Rota özeti">
-    <div class="stat"><div class="k">Akış</div><div class="v">${p.length} ana durak</div></div>
+    <div class="stat"><div class="k">Akış</div><div class="v">${p.length} rota noktası</div></div>
     <div class="stat"><div class="k">Kayıtlı ulaşım</div><div class="v mono">${minutes?('~'+minutes+' dk'):'Yerinde'}</div></div>
     <div class="stat"><div class="k">Başlangıç</div><div class="v">${first?esc(first.name):'Yok'}</div></div>
     <div class="stat"><div class="k">Modlar</div><div class="v">${esc(modes.join(' + ')||'Yerinde')}</div></div>
@@ -470,14 +474,15 @@ function render(){
   if(ACTIVE_MAP){ACTIVE_MAP.remove();ACTIVE_MAP=null;}
   if(!DAY)DAY=(today&&today.id)||D[0].id;
   const day=D.find(d=>d.id===DAY)||D[0],isToday=today&&today.id===day.id;
-  const nav=dayNav(day,today),hero=dayHero(day,D.indexOf(day)),stats=dayStats(day);
+  const nav=dayNav(day,today),hero=dayHero(day,D.indexOf(day)),stats=dayStats(day,TAB==='map');
 
   if(TAB==='map'){
     V.innerHTML=nav+hero+stats+`<div class="route-layout"><section>${mapStage(day)}</section><section class="route-copy">
       ${routeBrief(day)}
       <a class="btn full" href="${dayGmaps(day)}" target="_blank" rel="noopener">Tüm rotayı Google Maps'te aç ↗</a>
       <div class="disc">Kesik çizgi günün yönünü ve durak sırasını gösterir, navigasyon rotası değildir. Gerçek trafik ve yol seçimi için ilgili durağı Google Maps'te açın.</div>
-      ${routeList(day)}</section></div>`;
+      ${routeList(day)}
+      <button class="btn full" data-open-day="${esc(day.id)}" style="margin-top:12px">Günün tam yazılı planını aç</button></section></div>`;
     mountMap(day);
     return;
   }
